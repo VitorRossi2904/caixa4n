@@ -90,10 +90,10 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  const copiarResumo = async () => {
+    const copiarResumo = async () => {
     try {
       await navigator.clipboard.writeText(textoResumo());
-      alert("Resumo copiado! Cole aqui no chat ou no WhatsApp.");
+      window.location.href = "/obrigado";
     } catch {
       alert("Não consegui copiar automaticamente. Use 'Baixar resumo'.");
     }
