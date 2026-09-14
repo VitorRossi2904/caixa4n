@@ -11,6 +11,7 @@ const brl = (v: number) =>
 export default function Home() {
   const [negocio, setNegocio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
   const [faturamento, setFaturamento] = useState("");
   const [aReceber, setAReceber] = useState("");
   const [servicos, setServicos] = useState<Servico[]>([
@@ -29,6 +30,11 @@ export default function Home() {
   const totalDespesas = despesas.reduce((s, d) => s + (Number(d.valor) || 0), 0);
 
   const margem = (s: Servico) => (Number(s.preco) || 0) - (Number(s.custo) || 0);
+  const margemPct = (s: Servico) => {
+    const preco = Number(s.preco) || 0;
+    if (preco <= 0) return 0;
+    return Math.round((margem(s) / preco) * 100);
+  };
   const servicosPreenchidos = servicos.filter((s) => s.nome.trim());
   const melhorMargem = servicosPreenchidos.reduce<Servico | null>(
     (melhor, s) => (melhor ? (margem(s) > margem(melhor) ? s : melhor) : s),
@@ -52,11 +58,12 @@ export default function Home() {
       "-------------------",
       `Negócio: ${negocio || "—"}`,
       `WhatsApp: ${whatsapp || "—"}`,
+      `E-mail: ${email || "—"}`,
       "",
       "SERVIÇOS (preço | custo | margem)",
       ...servicosPreenchidos.map(
         (s) =>
-          `${s.nome}: ${brl(Number(s.preco) || 0)} | ${brl(Number(s.custo) || 0)} | ${brl(margem(s))}`
+          `${s.nome}: ${brl(Number(s.preco) || 0)} | ${brl(Number(s.custo) || 0)} | ${brl(margem(s))} (${margemPct(s)}%)`
       ),
       "",
       "DESPESAS MENSAIS",
@@ -67,7 +74,7 @@ export default function Home() {
       "OS 4 NÚMEROS",
       `1. Quanto entra por mês: ${brl(entrada)}`,
       `2. Quanto falta receber: ${brl(pendente)}`,
-      `3. Serviço com melhor margem: ${melhorMargem?.nome.trim() || "—"} (margem ${brl(melhorMargem ? margem(melhorMargem) : 0)})`,
+      `3. Serviço com melhor margem: ${melhorMargem?.nome.trim() || "—"} (margem ${brl(melhorMargem ? margem(melhorMargem) : 0)} — ${melhorMargem ? margemPct(melhorMargem) : 0}%)`,
       `4. Caixa aperta? ${aperta ? "SIM — despesas maiores que a receita" : "OK — receita cobre as despesas"}`,
     ];
     return linhas.join("\n");
@@ -111,13 +118,22 @@ export default function Home() {
             onChange={(e) => setNegocio(e.target.value)}
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
           />
-          <input
-            type="tel"
-            placeholder="WhatsApp do responsável (ex.: 11 99999-9999)"
-            value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
-            className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
-          />
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input
+              type="tel"
+              placeholder="WhatsApp (ex.: 11 99999-9999)"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
+            />
+            <input
+              type="email"
+              placeholder="E-mail (ex.: contato@clinica.com)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
+            />
+          </div>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm text-zinc-400">
@@ -257,7 +273,7 @@ export default function Home() {
             </p>
             <p className="mt-1 text-sm text-zinc-400">
               {melhorMargem
-                ? `margem ${brl(margem(melhorMargem))}`
+                ? `margem ${brl(margem(melhorMargem))} (${margemPct(melhorMargem)}%)`
                 : "preencha preço e custo"}
             </p>
           </div>
@@ -294,7 +310,7 @@ export default function Home() {
         </section>
 
         <p className="mt-8 text-center text-sm text-zinc-500">
-          caixa4n versão 0.3 — diagnóstico em construção
+          caixa4n versão 0.4 — diagnóstico em construção
         </p>
       </div>
     </main>
