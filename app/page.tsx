@@ -81,6 +81,7 @@ export default function Home() {
   };
 
   const baixarResumo = () => {
+    enviarParaPlanilha();
     const blob = new Blob([textoResumo()], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
