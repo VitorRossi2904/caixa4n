@@ -90,9 +90,40 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-    const copiarResumo = async () => {
+    const enviarParaPlanilha = () => {
+    try {
+      fetch("https://script.google.com/macros/s/AKfycbzDyyBBBsS9KWjH2nnL_XNXwqiBR1h3sTJYJsiGGXZvdRqQ6IDDw_32rDR6aZtuZ2vwpg/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          negocio,
+          whatsapp,
+          email,
+          faturamento,
+          aReceber,
+          servicos: servicosPreenchidos
+            .map((s) => `${s.nome}: ${s.preco}/${s.custo}`)
+            .join("; "),
+          despesas: despesas
+            .filter((d) => d.nome.trim())
+            .map((d) => `${d.nome}: ${d.valor}`)
+            .join("; "),
+          melhorMargem: melhorMargem
+            ? `${melhorMargem.nome} (${brl(margem(melhorMargem))})`
+            : "",
+          caixaAperta: aperta ? "SIM" : "OK",
+        }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const copiarResumo = async () => {
     try {
       await navigator.clipboard.writeText(textoResumo());
+      enviarParaPlanilha();
       window.location.href = "/obrigado";
     } catch {
       alert("Não consegui copiar automaticamente. Use 'Baixar resumo'.");
