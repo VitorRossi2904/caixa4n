@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Servico = { nome: string; preco: string };
+type Servico = { nome: string; preco: string; custo: string };
 type Despesa = { nome: string; valor: string };
 
 const brl = (v: number) =>
@@ -10,12 +10,13 @@ const brl = (v: number) =>
 
 export default function Home() {
   const [negocio, setNegocio] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [faturamento, setFaturamento] = useState("");
   const [aReceber, setAReceber] = useState("");
   const [servicos, setServicos] = useState<Servico[]>([
-    { nome: "", preco: "" },
-    { nome: "", preco: "" },
-    { nome: "", preco: "" },
+    { nome: "", preco: "", custo: "" },
+    { nome: "", preco: "", custo: "" },
+    { nome: "", preco: "", custo: "" },
   ]);
   const [despesas, setDespesas] = useState<Despesa[]>([
     { nome: "", valor: "" },
@@ -26,9 +27,11 @@ export default function Home() {
   const entrada = Number(faturamento) || 0;
   const pendente = Number(aReceber) || 0;
   const totalDespesas = despesas.reduce((s, d) => s + (Number(d.valor) || 0), 0);
-  const maisCaro = servicos.reduce<Servico | null>(
-    (melhor, s) =>
-      (Number(s.preco) || 0) > (melhor ? Number(melhor.preco) : 0) ? s : melhor,
+
+  const margem = (s: Servico) => (Number(s.preco) || 0) - (Number(s.custo) || 0);
+  const servicosPreenchidos = servicos.filter((s) => s.nome.trim());
+  const melhorMargem = servicosPreenchidos.reduce<Servico | null>(
+    (melhor, s) => (melhor ? (margem(s) > margem(melhor) ? s : melhor) : s),
     null
   );
   const aperta = totalDespesas > entrada;
@@ -48,11 +51,13 @@ export default function Home() {
       "DIAGNÓSTICO caixa4n",
       "-------------------",
       `Negócio: ${negocio || "—"}`,
+      `WhatsApp: ${whatsapp || "—"}`,
       "",
-      "SERVIÇOS",
-      ...servicos
-        .filter((s) => s.nome.trim())
-        .map((s) => `${s.nome}: ${brl(Number(s.preco) || 0)}`),
+      "SERVIÇOS (preço | custo | margem)",
+      ...servicosPreenchidos.map(
+        (s) =>
+          `${s.nome}: ${brl(Number(s.preco) || 0)} | ${brl(Number(s.custo) || 0)} | ${brl(margem(s))}`
+      ),
       "",
       "DESPESAS MENSAIS",
       ...despesas
@@ -62,7 +67,7 @@ export default function Home() {
       "OS 4 NÚMEROS",
       `1. Quanto entra por mês: ${brl(entrada)}`,
       `2. Quanto falta receber: ${brl(pendente)}`,
-      `3. Serviço de maior preço: ${maisCaro?.nome.trim() || "—"} (${brl(Number(maisCaro?.preco) || 0)})`,
+      `3. Serviço com melhor margem: ${melhorMargem?.nome.trim() || "—"} (margem ${brl(melhorMargem ? margem(melhorMargem) : 0)})`,
       `4. Caixa aperta? ${aperta ? "SIM — despesas maiores que a receita" : "OK — receita cobre as despesas"}`,
     ];
     return linhas.join("\n");
@@ -106,6 +111,13 @@ export default function Home() {
             onChange={(e) => setNegocio(e.target.value)}
             className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
           />
+          <input
+            type="tel"
+            placeholder="WhatsApp do responsável (ex.: 11 99999-9999)"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
+          />
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm text-zinc-400">
@@ -138,14 +150,17 @@ export default function Home() {
 
         <section className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">2. Serviços e preços</h2>
+            <h2 className="text-lg font-semibold">2. Serviços, preço e custo</h2>
             <button
-              onClick={() => setServicos([...servicos, { nome: "", preco: "" }])}
+              onClick={() => setServicos([...servicos, { nome: "", preco: "", custo: "" }])}
               className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold hover:bg-emerald-500"
             >
               + Serviço
             </button>
           </div>
+          <p className="mt-1 text-sm text-zinc-500">
+            A margem de cada serviço é calculada sozinha (preço − custo).
+          </p>
           {servicos.map((s, i) => (
             <div key={i} className="mt-3 flex gap-2">
               <input
@@ -161,7 +176,15 @@ export default function Home() {
                 placeholder="R$"
                 value={s.preco}
                 onChange={(e) => setServico(i, "preco", e.target.value)}
-                className="w-28 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 outline-none placeholder:text-zinc-500"
+                className="w-24 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-3 outline-none placeholder:text-zinc-500"
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Custo"
+                value={s.custo}
+                onChange={(e) => setServico(i, "custo", e.target.value)}
+                className="w-24 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-3 outline-none placeholder:text-zinc-500"
               />
               {servicos.length > 1 && (
                 <button
@@ -228,9 +251,14 @@ export default function Home() {
             </p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-            <p className="text-sm text-zinc-400">Serviço de maior preço</p>
+            <p className="text-sm text-zinc-400">Serviço com melhor margem</p>
             <p className="mt-2 text-2xl font-bold text-sky-400">
-              {maisCaro?.nome.trim() || "—"}
+              {melhorMargem?.nome.trim() || "—"}
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              {melhorMargem
+                ? `margem ${brl(margem(melhorMargem))}`
+                : "preencha preço e custo"}
             </p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
@@ -266,7 +294,7 @@ export default function Home() {
         </section>
 
         <p className="mt-8 text-center text-sm text-zinc-500">
-          caixa4n versão 0.2 — diagnóstico em construção
+          caixa4n versão 0.3 — diagnóstico em construção
         </p>
       </div>
     </main>
