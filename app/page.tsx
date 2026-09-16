@@ -120,7 +120,90 @@ export default function Home() {
       console.error(err);
     }
   };
+const gerarRelatorio = () => {
+    enviarParaPlanilha();
 
+    const linhasServicos = servicosPreenchidos
+      .map(
+        (s) =>
+          `<tr><td>${s.nome}</td><td>${brl(Number(s.preco) || 0)}</td><td>${brl(
+            Number(s.custo) || 0
+          )}</td><td>${brl(margem(s))} (${margemPct(s)}%)</td></tr>`
+      )
+      .join("");
+
+    const linhasDespesas = despesas
+      .filter((d) => d.nome.trim())
+      .map((d) => `<tr><td>${d.nome}</td><td>${brl(Number(d.valor) || 0)}</td></tr>`)
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Relatório caixa4n — ${negocio || "Diagnóstico"}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, Segoe UI, sans-serif; color: #18181b; margin: 0; padding: 40px; }
+  h1 { font-size: 26px; margin: 0; }
+  .sub { color: #71717a; margin-top: 4px; font-size: 14px; }
+  .meta { margin-top: 24px; font-size: 14px; color: #3f3f46; line-height: 1.7; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .card { border: 1px solid #e4e4e7; border-radius: 12px; padding: 16px; }
+  .rotulo { font-size: 12px; color: #71717a; }
+  .valor { font-size: 20px; font-weight: 700; margin-top: 6px; }
+  h2 { font-size: 16px; margin-top: 28px; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; border-bottom: 1px solid #e4e4e7; padding: 8px; }
+  th { color: #71717a; font-weight: 600; }
+  .rodape { margin-top: 32px; font-size: 12px; color: #a1a1aa; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+  <h1>Diagnóstico caixa4n</h1>
+  <p class="sub">O copiloto financeiro do seu negócio</p>
+
+  <div class="meta">
+    <strong>Negócio:</strong> ${negocio || "—"}<br/>
+    <strong>WhatsApp:</strong> ${whatsapp || "—"}<br/>
+    <strong>E-mail:</strong> ${email || "—"}<br/>
+    <strong>Data:</strong> ${new Date().toLocaleDateString("pt-BR")}
+  </div>
+
+  <h2>Os 4 números</h2>
+  <div class="grid">
+    <div class="card"><div class="rotulo">Quanto entra por mês</div><div class="valor">${brl(entrada)}</div></div>
+    <div class="card"><div class="rotulo">Quanto falta receber</div><div class="valor">${brl(pendente)}</div></div>
+    <div class="card"><div class="rotulo">Serviço com melhor margem</div><div class="valor">${melhorMargem ? melhorMargem.nome.trim() : "—"}</div></div>
+    <div class="card"><div class="rotulo">Caixa aperta?</div><div class="valor">${aperta ? "SIM — aperta" : "OK — equilibrado"}</div></div>
+  </div>
+
+  <h2>Serviços (preço | custo | margem)</h2>
+  <table>
+    <thead><tr><th>Serviço</th><th>Preço</th><th>Custo</th><th>Margem</th></tr></thead>
+    <tbody>${linhasServicos || "<tr><td colspan='4'>—</td></tr>"}</tbody>
+  </table>
+
+  <h2>Despesas mensais</h2>
+  <table>
+    <thead><tr><th>Despesa</th><th>Valor</th></tr></thead>
+    <tbody>${linhasDespesas || "<tr><td colspan='2'>—</td></tr>"}</tbody>
+  </table>
+
+  <p class="rodape">Relatório gerado pelo caixa4n.</p>
+  <script>window.onload = function () { window.print(); };</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) {
+      alert("Permita pop-ups no navegador para gerar o relatório.");
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+  };
   const copiarResumo = async () => {
     try {
       await navigator.clipboard.writeText(textoResumo());
@@ -337,6 +420,12 @@ export default function Home() {
               className="rounded-lg border border-zinc-600 px-6 py-3 font-semibold hover:bg-zinc-800"
             >
               Baixar resumo
+            </button>
+                 <button
+              onClick={gerarRelatorio}
+              className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-500"
+            >
+              Baixar relatório (PDF)
             </button>
           </div>
         </section>
